@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoJudge - LLM Battle Arena</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AutoJudge</h1>
+            <p>Dynamic LLM evaluation through head-to-head battles</p>
+        </header>
+
+        <main>
+            <section class="battle-setup">
+                <h2>Setup Battle</h2>
+                
+                <div class="input-group">
+                    <label for="prompt">Enter your task prompt:</label>
+                    <textarea id="prompt" placeholder="Describe the task you want the LLMs to perform..." rows="4"></textarea>
+                </div>
+
+                <div class="model-selection">
+                    <div class="model-group">
+                        <label for="model1">Select Model 1:</label>
+                        <select id="model1">
+                            <option value="">Choose a model...</option>
+                            <option value="gpt-4o">GPT-4o</option>
+                            <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                            <option value="gemini-pro">Gemini Pro</option>
+                            <option value="llama-3.1-70b">Llama 3.1 70B</option>
+                        </select>
+                    </div>
+
+                    <div class="vs">VS</div>
+
+                    <div class="model-group">
+                        <label for="model2">Select Model 2:</label>
+                        <select id="model2">
+                            <option value="">Choose a model...</option>
+                            <option value="gpt-4o">GPT-4o</option>
+                            <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                            <option value="gemini-pro">Gemini Pro</option>
+                            <option value="llama-3.1-70b">Llama 3.1 70B</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="start-battle" class="battle-btn" disabled>Start Battle</button>
+            </section>
+
+            <section class="battle-progress" style="display: none;">
+                <h2>Battle in Progress</h2>
+                <div class="progress-steps">
+                    <div class="step" id="step-rubric">
+                        <span class="step-number">1</span>
+                        <span class="step-text">Generating evaluation rubric...</span>
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="step" id="step-responses">
+                        <span class="step-number">2</span>
+                        <span class="step-text">Getting model responses...</span>
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="step" id="step-judging">
+                        <span class="step-number">3</span>
+                        <span class="step-text">Judge models evaluating...</span>
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="results" style="display: none;">
+                <h2>Battle Results</h2>
+                
+                <div class="winner-announcement">
+                    <h3 id="winner-text"></h3>
+                </div>
+
+                <div class="scores">
+                    <div class="model-score">
+                        <h4 id="model1-name"></h4>
+                        <div class="score" id="model1-score"></div>
+                    </div>
+                    <div class="model-score">
+                        <h4 id="model2-name"></h4>
+                        <div class="score" id="model2-score"></div>
+                    </div>
+                </div>
+
+                <div class="detailed-results">
+                    <h4>Evaluation Rubric</h4>
+                    <div id="rubric-display"></div>
+                    
+                    <h4>Judge Scores</h4>
+                    <div id="judge-scores"></div>
+                </div>
+
+                <button id="new-battle" class="battle-btn">Start New Battle</button>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
