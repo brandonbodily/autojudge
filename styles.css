@@ -268,12 +268,120 @@ select:focus {
 }
 
 #rubric-display,
-#judge-scores {
+#judge-scores,
+#judge-evaluations {
     background: white;
     padding: 15px;
     border-radius: 6px;
     margin-bottom: 15px;
     line-height: 1.6;
+}
+
+.llm-outputs {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.llm-outputs h4 {
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.outputs-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.output-section {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #ecf0f1;
+}
+
+.output-section h5 {
+    background: #3498db;
+    color: white;
+    padding: 12px 15px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.output-content {
+    padding: 15px;
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.judge-evaluation {
+    background: white;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    overflow: hidden;
+}
+
+.judge-header {
+    background: #34495e;
+    color: white;
+    padding: 12px 15px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.judge-scores-summary {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+}
+
+.judge-content {
+    padding: 15px;
+}
+
+.evaluation-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.metric {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 6px;
+    border-left: 4px solid #3498db;
+}
+
+.metric-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.metric-scores {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.reasoning {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+    font-style: italic;
+    color: #555;
 }
 
 @media (max-width: 768px) {
@@ -292,6 +400,19 @@ select:focus {
     .scores {
         flex-direction: column;
         align-items: center;
+    }
+    
+    .outputs-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .evaluation-metrics {
+        grid-template-columns: 1fr;
+    }
+    
+    .judge-scores-summary {
+        flex-direction: column;
+        gap: 5px;
     }
 }
 

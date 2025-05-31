@@ -115,20 +115,25 @@ class AutoJudge {
         await this.delay(4000);
 
         const judges = this.getJudges();
-        const judgeScores = {};
+        const judgeEvaluations = {};
 
         judges.forEach(judge => {
-            judgeScores[judge] = {
-                model1: this.generateRandomScore(),
-                model2: this.generateRandomScore()
+            const evaluation = this.generateJudgeEvaluation();
+            judgeEvaluations[judge] = {
+                overallScores: {
+                    model1: evaluation.model1Overall,
+                    model2: evaluation.model2Overall
+                },
+                metrics: evaluation.metrics,
+                reasoning: evaluation.reasoning
             };
         });
 
-        const avgModel1 = this.calculateAverage(Object.values(judgeScores).map(j => j.model1));
-        const avgModel2 = this.calculateAverage(Object.values(judgeScores).map(j => j.model2));
+        const avgModel1 = this.calculateAverage(Object.values(judgeEvaluations).map(j => j.overallScores.model1));
+        const avgModel2 = this.calculateAverage(Object.values(judgeEvaluations).map(j => j.overallScores.model2));
 
         this.currentBattle.scores = {
-            individual: judgeScores,
+            individual: judgeEvaluations,
             averages: {
                 model1: avgModel1,
                 model2: avgModel2
@@ -142,12 +147,41 @@ class AutoJudge {
         return Math.round((Math.random() * 4 + 6) * 10) / 10;
     }
 
+    generateJudgeEvaluation() {
+        const { rubric } = this.currentBattle;
+        const metrics = {};
+        
+        rubric.criteria.forEach(criterion => {
+            metrics[criterion] = {
+                model1: this.generateRandomScore(),
+                model2: this.generateRandomScore()
+            };
+        });
+
+        const model1Overall = this.calculateAverage(Object.values(metrics).map(m => m.model1));
+        const model2Overall = this.calculateAverage(Object.values(metrics).map(m => m.model2));
+
+        const reasoningTemplates = [
+            "Model 1 demonstrated stronger logical flow and evidence-based reasoning, while Model 2 excelled in creativity and practical applications.",
+            "Both models provided comprehensive responses, but Model 1 showed superior accuracy and detail, whereas Model 2 offered better structure and clarity.",
+            "Model 2 outperformed in relevance and usefulness, though Model 1 provided more thorough coverage of the topic with better coherence.",
+            "The responses were closely matched, with Model 1 showing slight advantages in completeness and Model 2 demonstrating better practical value."
+        ];
+
+        return {
+            model1Overall,
+            model2Overall,
+            metrics,
+            reasoning: reasoningTemplates[Math.floor(Math.random() * reasoningTemplates.length)]
+        };
+    }
+
     calculateAverage(scores) {
         return Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10) / 10;
     }
 
     showResults() {
-        const { model1, model2, rubric, scores } = this.currentBattle;
+        const { model1, model2, rubric, scores, responses } = this.currentBattle;
         const { averages, individual } = scores;
 
         document.getElementById('model1-name').textContent = this.getModelDisplayName(model1);
@@ -162,22 +196,54 @@ class AutoJudge {
         document.getElementById('winner-text').textContent = 
             scoreDiff < 0.5 ? "It's a close match!" : `${winnerName} wins!`;
 
+        // Display LLM outputs side by side
+        document.getElementById('output1-title').textContent = this.getModelDisplayName(model1);
+        document.getElementById('output2-title').textContent = this.getModelDisplayName(model2);
+        document.getElementById('output1-content').textContent = responses.model1;
+        document.getElementById('output2-content').textContent = responses.model2;
+
         document.getElementById('rubric-display').innerHTML = `
             <strong>Criteria:</strong> ${rubric.criteria.join(', ')}<br>
             <strong>Description:</strong> ${rubric.description}
         `;
 
-        let judgeScoresHtml = '';
-        Object.entries(individual).forEach(([judge, scores]) => {
-            judgeScoresHtml += `
-                <div style="margin-bottom: 10px;">
-                    <strong>${judge}:</strong> 
-                    ${this.getModelDisplayName(model1)}: ${scores.model1} | 
-                    ${this.getModelDisplayName(model2)}: ${scores.model2}
+        // Display detailed judge evaluations
+        let judgeEvaluationsHtml = '';
+        Object.entries(individual).forEach(([judge, evaluation]) => {
+            let metricsHtml = '';
+            Object.entries(evaluation.metrics).forEach(([metric, scores]) => {
+                metricsHtml += `
+                    <div class="metric">
+                        <div class="metric-name">${metric}</div>
+                        <div class="metric-scores">
+                            <span>${this.getModelDisplayName(model1)}: ${scores.model1}</span>
+                            <span>${this.getModelDisplayName(model2)}: ${scores.model2}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            judgeEvaluationsHtml += `
+                <div class="judge-evaluation">
+                    <div class="judge-header">
+                        <span>${this.getJudgeDisplayName(judge)}</span>
+                        <div class="judge-scores-summary">
+                            <span>${this.getModelDisplayName(model1)}: ${evaluation.overallScores.model1}</span>
+                            <span>${this.getModelDisplayName(model2)}: ${evaluation.overallScores.model2}</span>
+                        </div>
+                    </div>
+                    <div class="judge-content">
+                        <div class="evaluation-metrics">
+                            ${metricsHtml}
+                        </div>
+                        <div class="reasoning">
+                            <strong>Reasoning:</strong> ${evaluation.reasoning}
+                        </div>
+                    </div>
                 </div>
             `;
         });
-        document.getElementById('judge-scores').innerHTML = judgeScoresHtml;
+        document.getElementById('judge-evaluations').innerHTML = judgeEvaluationsHtml;
 
         this.showSection('results');
     }
@@ -190,6 +256,16 @@ class AutoJudge {
             'llama-3.1-70b': 'Llama 3.1 70B'
         };
         return displayNames[modelId] || modelId;
+    }
+
+    getJudgeDisplayName(judgeId) {
+        const displayNames = {
+            'gpt-4o': 'GPT-4o',
+            'claude-4-sonnet': 'Claude 4 Sonnet',
+            'gemini-2.5': 'Gemini 2.5',
+            'o3': 'o3'
+        };
+        return displayNames[judgeId] || judgeId;
     }
 
     setStepActive(stepId) {
@@ -248,7 +324,6 @@ class AutoJudge {
 
     addJudge() {
         const container = document.getElementById('judges-container');
-        const judgeCount = container.children.length;
         const judgeItem = document.createElement('div');
         judgeItem.className = 'judge-item';
         judgeItem.innerHTML = `
