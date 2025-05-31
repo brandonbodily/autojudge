@@ -48,6 +48,43 @@
                     </div>
                 </div>
 
+                <div class="judge-selection">
+                    <label>Select Judges:</label>
+                    <div class="judges-container" id="judges-container">
+                        <div class="judge-item">
+                            <select class="judge-select">
+                                <option value="">Choose a judge...</option>
+                                <option value="gpt-4o">GPT-4o</option>
+                                <option value="claude-4-sonnet">Claude 4 Sonnet</option>
+                                <option value="gemini-2.5">Gemini 2.5</option>
+                                <option value="o3" selected>o3</option>
+                            </select>
+                            <button type="button" class="remove-judge" style="display: none;">×</button>
+                        </div>
+                        <div class="judge-item">
+                            <select class="judge-select">
+                                <option value="">Choose a judge...</option>
+                                <option value="gpt-4o">GPT-4o</option>
+                                <option value="claude-4-sonnet" selected>Claude 4 Sonnet</option>
+                                <option value="gemini-2.5">Gemini 2.5</option>
+                                <option value="o3">o3</option>
+                            </select>
+                            <button type="button" class="remove-judge" style="display: none;">×</button>
+                        </div>
+                        <div class="judge-item">
+                            <select class="judge-select">
+                                <option value="">Choose a judge...</option>
+                                <option value="gpt-4o">GPT-4o</option>
+                                <option value="claude-4-sonnet">Claude 4 Sonnet</option>
+                                <option value="gemini-2.5" selected>Gemini 2.5</option>
+                                <option value="o3">o3</option>
+                            </select>
+                            <button type="button" class="remove-judge" style="display: none;">×</button>
+                        </div>
+                    </div>
+                    <button type="button" id="add-judge" class="add-judge-btn">+ Add Judge</button>
+                </div>
+
                 <button id="start-battle" class="battle-btn" disabled>Start Battle</button>
             </section>
 

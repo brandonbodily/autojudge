@@ -10,6 +10,7 @@ class AutoJudge {
         const model2Select = document.getElementById('model2');
         const startBattleBtn = document.getElementById('start-battle');
         const newBattleBtn = document.getElementById('new-battle');
+        const addJudgeBtn = document.getElementById('add-judge');
 
         [promptInput, model1Select, model2Select].forEach(element => {
             element.addEventListener('input', () => this.validateInputs());
@@ -17,15 +18,19 @@ class AutoJudge {
 
         startBattleBtn.addEventListener('click', () => this.startBattle());
         newBattleBtn.addEventListener('click', () => this.resetBattle());
+        addJudgeBtn.addEventListener('click', () => this.addJudge());
+        
+        this.initializeJudgeListeners();
     }
 
     validateInputs() {
         const prompt = document.getElementById('prompt').value.trim();
         const model1 = document.getElementById('model1').value;
         const model2 = document.getElementById('model2').value;
+        const judges = this.getJudges();
         const startBattleBtn = document.getElementById('start-battle');
 
-        const isValid = prompt.length > 0 && model1 && model2 && model1 !== model2;
+        const isValid = prompt.length > 0 && model1 && model2 && model1 !== model2 && judges.length >= 1;
         startBattleBtn.disabled = !isValid;
     }
 
@@ -109,7 +114,7 @@ class AutoJudge {
         
         await this.delay(4000);
 
-        const judges = ['Judge A', 'Judge B', 'Judge C'];
+        const judges = this.getJudges();
         const judgeScores = {};
 
         judges.forEach(judge => {
@@ -211,6 +216,8 @@ class AutoJudge {
         document.getElementById('model1').value = '';
         document.getElementById('model2').value = '';
         
+        this.resetJudges();
+        
         document.querySelectorAll('.step').forEach(step => {
             step.classList.remove('active', 'completed');
         });
@@ -221,6 +228,104 @@ class AutoJudge {
 
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    initializeJudgeListeners() {
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-judge')) {
+                this.removeJudge(e.target.closest('.judge-item'));
+            }
+        });
+        
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('judge-select')) {
+                this.validateInputs();
+            }
+        });
+        
+        this.updateJudgeRemoveButtons();
+    }
+
+    addJudge() {
+        const container = document.getElementById('judges-container');
+        const judgeCount = container.children.length;
+        const judgeItem = document.createElement('div');
+        judgeItem.className = 'judge-item';
+        judgeItem.innerHTML = `
+            <select class="judge-select">
+                <option value="">Choose a judge...</option>
+                <option value="gpt-4o">GPT-4o</option>
+                <option value="claude-4-sonnet">Claude 4 Sonnet</option>
+                <option value="gemini-2.5">Gemini 2.5</option>
+                <option value="o3">o3</option>
+            </select>
+            <button type="button" class="remove-judge">×</button>
+        `;
+        container.appendChild(judgeItem);
+        this.updateJudgeRemoveButtons();
+        this.validateInputs();
+    }
+
+    removeJudge(judgeItem) {
+        judgeItem.remove();
+        this.updateJudgeRemoveButtons();
+        this.validateInputs();
+    }
+
+    updateJudgeRemoveButtons() {
+        const judgeItems = document.querySelectorAll('.judge-item');
+        judgeItems.forEach((item) => {
+            const removeBtn = item.querySelector('.remove-judge');
+            if (judgeItems.length <= 3) {
+                removeBtn.style.display = 'none';
+            } else {
+                removeBtn.style.display = 'flex';
+            }
+        });
+    }
+
+    getJudges() {
+        const judgeSelects = document.querySelectorAll('.judge-select');
+        return Array.from(judgeSelects)
+            .map(select => select.value)
+            .filter(value => value.length > 0);
+    }
+
+    resetJudges() {
+        const container = document.getElementById('judges-container');
+        container.innerHTML = `
+            <div class="judge-item">
+                <select class="judge-select">
+                    <option value="">Choose a judge...</option>
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="claude-4-sonnet">Claude 4 Sonnet</option>
+                    <option value="gemini-2.5">Gemini 2.5</option>
+                    <option value="o3" selected>o3</option>
+                </select>
+                <button type="button" class="remove-judge" style="display: none;">×</button>
+            </div>
+            <div class="judge-item">
+                <select class="judge-select">
+                    <option value="">Choose a judge...</option>
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="claude-4-sonnet" selected>Claude 4 Sonnet</option>
+                    <option value="gemini-2.5">Gemini 2.5</option>
+                    <option value="o3">o3</option>
+                </select>
+                <button type="button" class="remove-judge" style="display: none;">×</button>
+            </div>
+            <div class="judge-item">
+                <select class="judge-select">
+                    <option value="">Choose a judge...</option>
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="claude-4-sonnet">Claude 4 Sonnet</option>
+                    <option value="gemini-2.5" selected>Gemini 2.5</option>
+                    <option value="o3">o3</option>
+                </select>
+                <button type="button" class="remove-judge" style="display: none;">×</button>
+            </div>
+        `;
+        this.updateJudgeRemoveButtons();
     }
 }
 

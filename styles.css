@@ -294,3 +294,77 @@ select:focus {
         align-items: center;
     }
 }
+
+.judge-selection {
+    margin-bottom: 25px;
+}
+
+.judge-selection label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.judges-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.judge-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.judge-select {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #ecf0f1;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    transition: border-color 0.3s ease;
+}
+
+.judge-select:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.remove-judge {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.remove-judge:hover {
+    background: #c0392b;
+}
+
+.add-judge-btn {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.add-judge-btn:hover {
+    background: #229954;
+}
