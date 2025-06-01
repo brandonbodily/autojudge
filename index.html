@@ -10,7 +10,7 @@
     <div class="container">
         <header>
             <h1>AutoJudge</h1>
-            <p>Dynamic LLM evaluation through head-to-head battles</p>
+            <p>AI Models Judging AI Models</p>
         </header>
 
         <main>
@@ -190,16 +190,19 @@
                         <span class="step-number">1</span>
                         <span class="step-text">Generating evaluation rubric...</span>
                         <div class="spinner"></div>
+                        <div class="step-details" id="rubric-details"></div>
                     </div>
                     <div class="step" id="step-responses">
                         <span class="step-number">2</span>
                         <span class="step-text">Getting model responses...</span>
                         <div class="spinner"></div>
+                        <div class="step-details" id="response-details"></div>
                     </div>
                     <div class="step" id="step-judging">
                         <span class="step-number">3</span>
                         <span class="step-text">Judge models evaluating...</span>
                         <div class="spinner"></div>
+                        <div class="step-details" id="judging-details"></div>
                     </div>
                 </div>
             </section>

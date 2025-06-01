@@ -210,6 +210,68 @@ select:focus {
     display: block;
 }
 
+.step-details {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+    display: none;
+}
+
+.step.active .step-details {
+    display: block;
+}
+
+.model-status {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #ddd;
+}
+
+.model-status.calling {
+    border-left-color: #3498db;
+    background: #e3f2fd;
+}
+
+.model-status.completed {
+    border-left-color: #27ae60;
+    background: #e8f5e8;
+}
+
+.model-status.error {
+    border-left-color: #e74c3c;
+    background: #fdf2f2;
+}
+
+.model-name {
+    font-weight: 600;
+    margin-right: 10px;
+}
+
+.model-progress {
+    margin-left: auto;
+    font-size: 12px;
+}
+
+.model-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+.completion-check {
+    color: #27ae60;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }

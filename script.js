@@ -145,7 +145,13 @@ Make the criteria specific and relevant to the task type. For example:
                 rubricModel = 'gpt-4o';
             }
 
+            // Show which model is generating the rubric
+            this.showModelProgress('rubric-details', rubricModel, 'calling', 'Generating rubric...');
+
             const rubricResponse = await this.callModel(rubricModel, rubricPrompt);
+            
+            // Show completion
+            this.showModelProgress('rubric-details', rubricModel, 'completed', 'Rubric generated');
             
             // Clean and parse the JSON response
             const rubricData = this.parseJSONResponse(rubricResponse);
@@ -157,6 +163,9 @@ Make the criteria specific and relevant to the task type. For example:
             
         } catch (error) {
             console.error('Error generating rubric:', error);
+            // Show error state
+            this.showModelProgress('rubric-details', 'Unknown', 'error', 'Failed to generate rubric');
+            
             // Fallback to a generic rubric if generation fails
             this.currentBattle.rubric = {
                 criteria: ['Quality', 'Relevance', 'Clarity', 'Completeness'],
@@ -171,9 +180,13 @@ Make the criteria specific and relevant to the task type. For example:
         this.setStepActive('step-responses');
         
         try {
+            // Show both models starting
+            this.showModelProgress('response-details', this.currentBattle.model1, 'calling', 'Generating response...');
+            this.showModelProgress('response-details', this.currentBattle.model2, 'calling', 'Generating response...', true);
+
             const [response1, response2] = await Promise.all([
-                this.callModel(this.currentBattle.model1, this.currentBattle.prompt),
-                this.callModel(this.currentBattle.model2, this.currentBattle.prompt)
+                this.callModelWithProgress(this.currentBattle.model1, this.currentBattle.prompt, 'response-details'),
+                this.callModelWithProgress(this.currentBattle.model2, this.currentBattle.prompt, 'response-details')
             ]);
 
             this.currentBattle.responses = {
@@ -400,13 +413,20 @@ Make the criteria specific and relevant to the task type. For example:
             const judges = this.getJudges();
             const judgeEvaluations = {};
 
+            // Show all judges starting
+            judges.forEach(judge => {
+                this.showModelProgress('judging-details', judge, 'calling', 'Evaluating responses...', true);
+            });
+
             // Process each judge's evaluation
             for (const judge of judges) {
                 try {
-                    const evaluation = await this.getJudgeEvaluation(judge);
+                    const evaluation = await this.getJudgeEvaluationWithProgress(judge);
                     judgeEvaluations[judge] = evaluation;
                 } catch (error) {
                     console.error(`Error getting evaluation from judge ${judge}:`, error);
+                    // Show error state
+                    this.showModelProgress('judging-details', judge, 'error', 'Evaluation failed');
                     // Fallback evaluation if a judge fails
                     judgeEvaluations[judge] = this.getFallbackEvaluation();
                 }
@@ -558,6 +578,66 @@ Be thorough, fair, and objective in your evaluation. Focus on the specific crite
             }
             
             throw new Error(`JSON parsing failed: ${error.message}`);
+        }
+    }
+
+    showModelProgress(containerId, modelId, status, message, append = false) {
+        const container = document.getElementById(containerId);
+        const modelName = this.getModelDisplayName(modelId);
+        const statusId = `${containerId}-${modelId}`;
+        
+        // Check if model status already exists
+        let modelStatus = document.getElementById(statusId);
+        
+        if (!modelStatus) {
+            modelStatus = document.createElement('div');
+            modelStatus.id = statusId;
+            modelStatus.className = 'model-status';
+            
+            if (append || container.children.length === 0) {
+                container.appendChild(modelStatus);
+            } else {
+                container.innerHTML = '';
+                container.appendChild(modelStatus);
+            }
+        }
+        
+        // Update status class
+        modelStatus.className = `model-status ${status}`;
+        
+        // Update content based on status
+        let content = `<span class="model-name">${modelName}</span>`;
+        
+        if (status === 'calling') {
+            content += `<div class="model-spinner"></div><span class="model-progress">${message}</span>`;
+        } else if (status === 'completed') {
+            content += `<span class="completion-check">✓</span><span class="model-progress">${message}</span>`;
+        } else if (status === 'error') {
+            content += `<span class="completion-check" style="color: #e74c3c;">✗</span><span class="model-progress">${message}</span>`;
+        }
+        
+        modelStatus.innerHTML = content;
+    }
+
+    async callModelWithProgress(modelId, prompt, containerId) {
+        try {
+            const result = await this.callModel(modelId, prompt);
+            this.showModelProgress(containerId, modelId, 'completed', 'Response generated');
+            return result;
+        } catch (error) {
+            this.showModelProgress(containerId, modelId, 'error', 'Failed to generate response');
+            throw error;
+        }
+    }
+
+    async getJudgeEvaluationWithProgress(judgeModel) {
+        try {
+            const result = await this.getJudgeEvaluation(judgeModel);
+            this.showModelProgress('judging-details', judgeModel, 'completed', 'Evaluation complete');
+            return result;
+        } catch (error) {
+            this.showModelProgress('judging-details', judgeModel, 'error', 'Evaluation failed');
+            throw error;
         }
     }
 
