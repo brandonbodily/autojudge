@@ -111,24 +111,59 @@ class AutoJudge {
     async generateRubric() {
         this.setStepActive('step-rubric');
         
-        await this.delay(2000);
+        try {
+            const rubricPrompt = `Create an evaluation rubric for the following task: "${this.currentBattle.prompt}"
 
-        const rubrics = [
-            {
-                criteria: ['Accuracy', 'Clarity', 'Completeness', 'Creativity'],
-                description: 'Evaluation based on factual correctness, clear communication, thoroughness, and innovative approach.'
-            },
-            {
-                criteria: ['Relevance', 'Detail', 'Structure', 'Practicality'],
-                description: 'Assessment of how well the response addresses the prompt with appropriate detail and organization.'
-            },
-            {
-                criteria: ['Logic', 'Evidence', 'Coherence', 'Usefulness'],
-                description: 'Judgment based on logical reasoning, supporting evidence, consistency, and practical value.'
+Please provide exactly 4 evaluation criteria that are most relevant for judging responses to this specific task. Return your response in this exact JSON format:
+
+{
+  "criteria": ["Criterion1", "Criterion2", "Criterion3", "Criterion4"],
+  "description": "Brief description of what this rubric evaluates for this specific task"
+}
+
+Make the criteria specific and relevant to the task type. For example:
+- For coding tasks: focus on correctness, efficiency, readability, best practices
+- For creative writing: focus on creativity, style, coherence, engagement
+- For analysis tasks: focus on accuracy, depth, logic, evidence
+- For explanatory tasks: focus on clarity, completeness, accuracy, usefulness`;
+
+            // Use a reliable model to generate the rubric (preferring GPT-4o or Claude)
+            const judges = this.getJudges();
+            let rubricModel = null;
+            
+            // Priority order: GPT-4o, Claude Opus 4, Claude Sonnet 4, first available judge
+            if (judges.includes('gpt-4o')) {
+                rubricModel = 'gpt-4o';
+            } else if (judges.includes('claude-opus-4')) {
+                rubricModel = 'claude-opus-4';
+            } else if (judges.includes('claude-sonnet-4')) {
+                rubricModel = 'claude-sonnet-4';
+            } else if (judges.length > 0) {
+                rubricModel = judges[0];
+            } else {
+                // Fallback if no judges selected
+                rubricModel = 'gpt-4o';
             }
-        ];
 
-        this.currentBattle.rubric = rubrics[Math.floor(Math.random() * rubrics.length)];
+            const rubricResponse = await this.callModel(rubricModel, rubricPrompt);
+            
+            // Parse the JSON response
+            const rubricData = JSON.parse(rubricResponse.trim());
+            
+            this.currentBattle.rubric = {
+                criteria: rubricData.criteria,
+                description: rubricData.description
+            };
+            
+        } catch (error) {
+            console.error('Error generating rubric:', error);
+            // Fallback to a generic rubric if generation fails
+            this.currentBattle.rubric = {
+                criteria: ['Quality', 'Relevance', 'Clarity', 'Completeness'],
+                description: 'General evaluation criteria for response quality and relevance to the prompt.'
+            };
+        }
+        
         this.setStepCompleted('step-rubric');
     }
 
