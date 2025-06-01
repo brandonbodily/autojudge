@@ -188,20 +188,35 @@ class AutoJudge {
     }
 
     async callOpenAI(modelId, prompt) {
-        // Use max_completion_tokens for newer models (o3, o4, etc.) and max_tokens for older models
-        const useNewParameter = modelId.startsWith('o3') || modelId.startsWith('o4') || modelId.startsWith('gpt-4');
-        const tokenParam = useNewParameter ? 'max_completion_tokens' : 'max_tokens';
+        let requestBody;
         
-        const requestBody = {
-            model: modelId,
-            messages: [{
-                role: 'user',
-                content: prompt
-            }],
-            temperature: 0.7
-        };
-        
-        requestBody[tokenParam] = 2000;
+        // o3 models have special requirements
+        if (modelId.startsWith('o3')) {
+            requestBody = {
+                model: modelId,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }],
+                reasoning_effort: 'medium',
+                max_completion_tokens: 2000
+            };
+        } else {
+            // Use max_completion_tokens for newer models and max_tokens for older models
+            const useNewParameter = modelId.startsWith('o4') || modelId.startsWith('gpt-4');
+            const tokenParam = useNewParameter ? 'max_completion_tokens' : 'max_tokens';
+            
+            requestBody = {
+                model: modelId,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }],
+                temperature: 0.7
+            };
+            
+            requestBody[tokenParam] = 2000;
+        }
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -572,8 +587,10 @@ class AutoJudge {
                 <option value="">Choose a judge...</option>
                 <optgroup label="OpenAI">
                     <option value="gpt-4o">GPT-4o</option>
-                    <option value="o3">o3</option>
+                    <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
                     <option value="o3-mini">o3 Mini</option>
+                    <option value="o3">o3</option>
+                    <option value="o4-mini">o4 Mini</option>
                 </optgroup>
                 <optgroup label="Anthropic">
                     <option value="claude-opus-4">Claude Opus 4</option>
@@ -585,6 +602,11 @@ class AutoJudge {
                 </optgroup>
                 <optgroup label="xAI">
                     <option value="grok-3">Grok 3</option>
+                    <option value="grok-3-mini">Grok 3 Mini</option>
+                </optgroup>
+                <optgroup label="DeepSeek">
+                    <option value="deepseek-r1">DeepSeek-R1</option>
+                    <option value="deepseek-r1-0528">DeepSeek-R1-0528</option>
                 </optgroup>
             </select>
             <button type="button" class="remove-judge">×</button>
@@ -627,37 +649,26 @@ class AutoJudge {
                     <option value="">Choose a judge...</option>
                     <optgroup label="OpenAI">
                         <option value="gpt-4o">GPT-4o</option>
-                        <option value="gpt-4o-mini">GPT-4o Mini</option>
-                        <option value="o1-preview">o1 Preview</option>
-                        <option value="o1-mini">o1 Mini</option>
+                        <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+                        <option value="o3-mini">o3 Mini</option>
+                        <option value="o3" selected>o3</option>
+                        <option value="o4-mini">o4 Mini</option>
                     </optgroup>
                     <optgroup label="Anthropic">
-                        <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet</option>
-                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                        <option value="claude-opus-4">Claude Opus 4</option>
+                        <option value="claude-sonnet-4">Claude Sonnet 4</option>
                     </optgroup>
-                    <optgroup label="Google">
-                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
-                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    <optgroup label="Google DeepMind">
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                     </optgroup>
-                </select>
-                <button type="button" class="remove-judge" style="display: none;">×</button>
-            </div>
-            <div class="judge-item">
-                <select class="judge-select">
-                    <option value="">Choose a judge...</option>
-                    <optgroup label="OpenAI">
-                        <option value="gpt-4o" selected>GPT-4o</option>
-                        <option value="gpt-4o-mini">GPT-4o Mini</option>
-                        <option value="o1-preview">o1 Preview</option>
-                        <option value="o1-mini">o1 Mini</option>
+                    <optgroup label="xAI">
+                        <option value="grok-3">Grok 3</option>
+                        <option value="grok-3-mini">Grok 3 Mini</option>
                     </optgroup>
-                    <optgroup label="Anthropic">
-                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                    </optgroup>
-                    <optgroup label="Google">
-                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
-                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    <optgroup label="DeepSeek">
+                        <option value="deepseek-r1">DeepSeek-R1</option>
+                        <option value="deepseek-r1-0528">DeepSeek-R1-0528</option>
                     </optgroup>
                 </select>
                 <button type="button" class="remove-judge" style="display: none;">×</button>
@@ -667,17 +678,55 @@ class AutoJudge {
                     <option value="">Choose a judge...</option>
                     <optgroup label="OpenAI">
                         <option value="gpt-4o">GPT-4o</option>
-                        <option value="gpt-4o-mini">GPT-4o Mini</option>
-                        <option value="o1-preview">o1 Preview</option>
-                        <option value="o1-mini">o1 Mini</option>
+                        <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+                        <option value="o3-mini">o3 Mini</option>
+                        <option value="o3">o3</option>
+                        <option value="o4-mini">o4 Mini</option>
                     </optgroup>
                     <optgroup label="Anthropic">
-                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                        <option value="claude-opus-4" selected>Claude Opus 4</option>
+                        <option value="claude-sonnet-4">Claude Sonnet 4</option>
                     </optgroup>
-                    <optgroup label="Google">
-                        <option value="gemini-2.0-flash-exp" selected>Gemini 2.0 Flash</option>
-                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    <optgroup label="Google DeepMind">
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    </optgroup>
+                    <optgroup label="xAI">
+                        <option value="grok-3">Grok 3</option>
+                        <option value="grok-3-mini">Grok 3 Mini</option>
+                    </optgroup>
+                    <optgroup label="DeepSeek">
+                        <option value="deepseek-r1">DeepSeek-R1</option>
+                        <option value="deepseek-r1-0528">DeepSeek-R1-0528</option>
+                    </optgroup>
+                </select>
+                <button type="button" class="remove-judge" style="display: none;">×</button>
+            </div>
+            <div class="judge-item">
+                <select class="judge-select">
+                    <option value="">Choose a judge...</option>
+                    <optgroup label="OpenAI">
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+                        <option value="o3-mini">o3 Mini</option>
+                        <option value="o3">o3</option>
+                        <option value="o4-mini">o4 Mini</option>
+                    </optgroup>
+                    <optgroup label="Anthropic">
+                        <option value="claude-opus-4">Claude Opus 4</option>
+                        <option value="claude-sonnet-4">Claude Sonnet 4</option>
+                    </optgroup>
+                    <optgroup label="Google DeepMind">
+                        <option value="gemini-2.5-pro" selected>Gemini 2.5 Pro</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    </optgroup>
+                    <optgroup label="xAI">
+                        <option value="grok-3">Grok 3</option>
+                        <option value="grok-3-mini">Grok 3 Mini</option>
+                    </optgroup>
+                    <optgroup label="DeepSeek">
+                        <option value="deepseek-r1">DeepSeek-R1</option>
+                        <option value="deepseek-r1-0528">DeepSeek-R1-0528</option>
                     </optgroup>
                 </select>
                 <button type="button" class="remove-judge" style="display: none;">×</button>
