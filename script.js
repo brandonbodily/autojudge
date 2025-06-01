@@ -748,7 +748,6 @@ Be thorough, fair, and objective in your evaluation. Focus on the specific crite
             'gpt-4o': 'GPT-4o',
             'gpt-4.1-mini': 'GPT-4.1 Mini',
             'o3-mini': 'o3 Mini',
-            'o3': 'o3',
             'o4-mini': 'o4 Mini',
             'claude-opus-4': 'Claude Opus 4',
             'claude-sonnet-4': 'Claude Sonnet 4',
@@ -831,7 +830,6 @@ Be thorough, fair, and objective in your evaluation. Focus on the specific crite
                     <option value="gpt-4o">GPT-4o</option>
                     <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
                     <option value="o3-mini">o3 Mini</option>
-                    <option value="o3">o3</option>
                     <option value="o4-mini">o4 Mini</option>
                 </optgroup>
                 <optgroup label="Anthropic">
@@ -892,8 +890,7 @@ Be thorough, fair, and objective in your evaluation. Focus on the specific crite
                     <optgroup label="OpenAI">
                         <option value="gpt-4o">GPT-4o</option>
                         <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
-                        <option value="o3-mini">o3 Mini</option>
-                        <option value="o3" selected>o3</option>
+                        <option value="o3-mini" selected>o3 Mini</option>
                         <option value="o4-mini">o4 Mini</option>
                     </optgroup>
                     <optgroup label="Anthropic">
@@ -922,7 +919,6 @@ Be thorough, fair, and objective in your evaluation. Focus on the specific crite
                         <option value="gpt-4o">GPT-4o</option>
                         <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
                         <option value="o3-mini">o3 Mini</option>
-                        <option value="o3">o3</option>
                         <option value="o4-mini">o4 Mini</option>
                     </optgroup>
                     <optgroup label="Anthropic">
@@ -951,7 +947,6 @@ Be thorough, fair, and objective in your evaluation. Focus on the specific crite
                         <option value="gpt-4o">GPT-4o</option>
                         <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
                         <option value="o3-mini">o3 Mini</option>
-                        <option value="o3">o3</option>
                         <option value="o4-mini">o4 Mini</option>
                     </optgroup>
                     <optgroup label="Anthropic">
