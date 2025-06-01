@@ -147,8 +147,8 @@ Make the criteria specific and relevant to the task type. For example:
 
             const rubricResponse = await this.callModel(rubricModel, rubricPrompt);
             
-            // Parse the JSON response
-            const rubricData = JSON.parse(rubricResponse.trim());
+            // Clean and parse the JSON response
+            const rubricData = this.parseJSONResponse(rubricResponse);
             
             this.currentBattle.rubric = {
                 criteria: rubricData.criteria,
@@ -246,8 +246,7 @@ Make the criteria specific and relevant to the task type. For example:
                 messages: [{
                     role: 'user',
                     content: prompt
-                }],
-                temperature: 0.7
+                }]
             };
             
             requestBody[tokenParam] = 2000;
@@ -331,8 +330,7 @@ Make the criteria specific and relevant to the task type. For example:
                     }]
                 }],
                 generationConfig: {
-                    maxOutputTokens: 2000,
-                    temperature: 0.7
+                    maxOutputTokens: 2000
                 }
             })
         });
@@ -358,8 +356,7 @@ Make the criteria specific and relevant to the task type. For example:
                     role: 'user',
                     content: prompt
                 }],
-                max_tokens: 2000,
-                temperature: 0.7
+                max_tokens: 2000
             })
         });
 
@@ -384,8 +381,7 @@ Make the criteria specific and relevant to the task type. For example:
                     role: 'user',
                     content: prompt
                 }],
-                max_tokens: 2000,
-                temperature: 0.7
+                max_tokens: 2000
             })
         });
 
@@ -400,42 +396,108 @@ Make the criteria specific and relevant to the task type. For example:
     async evaluateResponses() {
         this.setStepActive('step-judging');
         
-        await this.delay(4000);
+        try {
+            const judges = this.getJudges();
+            const judgeEvaluations = {};
 
-        const judges = this.getJudges();
-        const judgeEvaluations = {};
-
-        judges.forEach(judge => {
-            const evaluation = this.generateJudgeEvaluation();
-            judgeEvaluations[judge] = {
-                overallScores: {
-                    model1: evaluation.model1Overall,
-                    model2: evaluation.model2Overall
-                },
-                metrics: evaluation.metrics,
-                reasoning: evaluation.reasoning
-            };
-        });
-
-        const avgModel1 = this.calculateAverage(Object.values(judgeEvaluations).map(j => j.overallScores.model1));
-        const avgModel2 = this.calculateAverage(Object.values(judgeEvaluations).map(j => j.overallScores.model2));
-
-        this.currentBattle.scores = {
-            individual: judgeEvaluations,
-            averages: {
-                model1: avgModel1,
-                model2: avgModel2
+            // Process each judge's evaluation
+            for (const judge of judges) {
+                try {
+                    const evaluation = await this.getJudgeEvaluation(judge);
+                    judgeEvaluations[judge] = evaluation;
+                } catch (error) {
+                    console.error(`Error getting evaluation from judge ${judge}:`, error);
+                    // Fallback evaluation if a judge fails
+                    judgeEvaluations[judge] = this.getFallbackEvaluation();
+                }
             }
-        };
+
+            const avgModel1 = this.calculateAverage(Object.values(judgeEvaluations).map(j => j.overallScores.model1));
+            const avgModel2 = this.calculateAverage(Object.values(judgeEvaluations).map(j => j.overallScores.model2));
+
+            this.currentBattle.scores = {
+                individual: judgeEvaluations,
+                averages: {
+                    model1: avgModel1,
+                    model2: avgModel2
+                }
+            };
+        } catch (error) {
+            console.error('Error in judge evaluation:', error);
+            throw error;
+        }
 
         this.setStepCompleted('step-judging');
     }
 
-    generateRandomScore() {
-        return Math.round((Math.random() * 4 + 6) * 10) / 10;
+    async getJudgeEvaluation(judgeModel) {
+        const { prompt, responses, model1, model2, rubric } = this.currentBattle;
+        
+        const judgePrompt = `You are an expert AI evaluator. Please evaluate these two responses to the given task.
+
+TASK: ${prompt}
+
+EVALUATION CRITERIA:
+${rubric.criteria.map((criterion, i) => `${i + 1}. ${criterion}`).join('\n')}
+
+RUBRIC DESCRIPTION: ${rubric.description}
+
+RESPONSE A (${this.getModelDisplayName(model1)}):
+${responses.model1}
+
+RESPONSE B (${this.getModelDisplayName(model2)}):
+${responses.model2}
+
+Please evaluate both responses according to each criterion on a scale of 1-10 (where 10 is excellent and 1 is poor).
+
+Return your evaluation in this exact JSON format:
+{
+  "model1_scores": {
+    "${rubric.criteria[0]}": 8.5,
+    "${rubric.criteria[1]}": 7.0,
+    "${rubric.criteria[2]}": 9.0,
+    "${rubric.criteria[3]}": 6.5
+  },
+  "model2_scores": {
+    "${rubric.criteria[0]}": 7.5,
+    "${rubric.criteria[1]}": 8.0,
+    "${rubric.criteria[2]}": 7.0,
+    "${rubric.criteria[3]}": 8.5
+  },
+  "reasoning": "Detailed explanation of your evaluation, comparing both responses across all criteria. Explain why you gave each score and what distinguishes the better response."
+}
+
+Be thorough, fair, and objective in your evaluation. Focus on the specific criteria provided.`;
+
+        const judgeResponse = await this.callModel(judgeModel, judgePrompt);
+        
+        // Clean and parse the JSON response
+        const evaluationData = this.parseJSONResponse(judgeResponse);
+        
+        // Calculate overall scores
+        const model1Overall = this.calculateAverage(Object.values(evaluationData.model1_scores));
+        const model2Overall = this.calculateAverage(Object.values(evaluationData.model2_scores));
+        
+        // Format metrics for display
+        const metrics = {};
+        rubric.criteria.forEach(criterion => {
+            metrics[criterion] = {
+                model1: evaluationData.model1_scores[criterion],
+                model2: evaluationData.model2_scores[criterion]
+            };
+        });
+
+        return {
+            overallScores: {
+                model1: model1Overall,
+                model2: model2Overall
+            },
+            metrics: metrics,
+            reasoning: evaluationData.reasoning
+        };
     }
 
-    generateJudgeEvaluation() {
+    getFallbackEvaluation() {
         const { rubric } = this.currentBattle;
         const metrics = {};
         
@@ -449,20 +511,56 @@ Make the criteria specific and relevant to the task type. For example:
         const model1Overall = this.calculateAverage(Object.values(metrics).map(m => m.model1));
         const model2Overall = this.calculateAverage(Object.values(metrics).map(m => m.model2));
 
-        const reasoningTemplates = [
-            "Model 1 demonstrated stronger logical flow and evidence-based reasoning, while Model 2 excelled in creativity and practical applications.",
-            "Both models provided comprehensive responses, but Model 1 showed superior accuracy and detail, whereas Model 2 offered better structure and clarity.",
-            "Model 2 outperformed in relevance and usefulness, though Model 1 provided more thorough coverage of the topic with better coherence.",
-            "The responses were closely matched, with Model 1 showing slight advantages in completeness and Model 2 demonstrating better practical value."
-        ];
-
         return {
-            model1Overall,
-            model2Overall,
-            metrics,
-            reasoning: reasoningTemplates[Math.floor(Math.random() * reasoningTemplates.length)]
+            overallScores: {
+                model1: model1Overall,
+                model2: model2Overall
+            },
+            metrics: metrics,
+            reasoning: "Evaluation unavailable - judge model encountered an error. Fallback scoring applied."
         };
     }
+
+    generateRandomScore() {
+        return Math.round((Math.random() * 4 + 6) * 10) / 10;
+    }
+
+    parseJSONResponse(response) {
+        let cleanResponse = response.trim();
+        
+        // Remove markdown code blocks if present
+        if (cleanResponse.startsWith('```json')) {
+            cleanResponse = cleanResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (cleanResponse.startsWith('```')) {
+            cleanResponse = cleanResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+        
+        // Try to extract JSON from the response if it's embedded in text
+        const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            cleanResponse = jsonMatch[0];
+        }
+        
+        // Handle common JSON formatting issues
+        try {
+            return JSON.parse(cleanResponse);
+        } catch (error) {
+            console.error('Failed to parse JSON response:', cleanResponse);
+            console.error('Parse error:', error.message);
+            
+            // Log the problematic part of the JSON
+            const errorPosition = error.message.match(/position (\d+)/);
+            if (errorPosition) {
+                const pos = parseInt(errorPosition[1]);
+                const start = Math.max(0, pos - 50);
+                const end = Math.min(cleanResponse.length, pos + 50);
+                console.error('Problem area:', cleanResponse.substring(start, end));
+            }
+            
+            throw new Error(`JSON parsing failed: ${error.message}`);
+        }
+    }
+
 
     calculateAverage(scores) {
         return Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10) / 10;
