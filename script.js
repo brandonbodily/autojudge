@@ -1,7 +1,40 @@
 class AutoJudge {
     constructor() {
         this.currentBattle = null;
+        this.apiKeys = {
+            openai: null,
+            anthropic: null,
+            google: null,
+            xai: null,
+            deepseek: null
+        };
+        this.loadApiKeys();
         this.initializeEventListeners();
+    }
+
+    async loadApiKeys() {
+        try {
+            const response = await fetch('/.env');
+            if (response.ok) {
+                const envText = await response.text();
+                const lines = envText.split('\n');
+                lines.forEach(line => {
+                    if (line.includes('OPENAI_API_KEY=')) {
+                        this.apiKeys.openai = line.split('=')[1];
+                    } else if (line.includes('ANTHROPIC_API_KEY=')) {
+                        this.apiKeys.anthropic = line.split('=')[1];
+                    } else if (line.includes('GOOGLE_API_KEY=')) {
+                        this.apiKeys.google = line.split('=')[1];
+                    } else if (line.includes('XAI_API_KEY=')) {
+                        this.apiKeys.xai = line.split('=')[1];
+                    } else if (line.includes('DEEPSEEK_API_KEY=')) {
+                        this.apiKeys.deepseek = line.split('=')[1];
+                    }
+                });
+            }
+        } catch (error) {
+            console.warn('Could not load .env file. API keys will need to be set manually.');
+        }
     }
 
     initializeEventListeners() {
@@ -60,7 +93,17 @@ class AutoJudge {
             this.showResults();
         } catch (error) {
             console.error('Battle failed:', error);
-            alert('Battle failed. Please try again.');
+            
+            let errorMessage = 'Battle failed. ';
+            if (error.message.includes('API error')) {
+                errorMessage += 'Please check your API keys in the .env file and try again.';
+            } else if (error.message.includes('Unknown provider')) {
+                errorMessage += 'Unsupported model selected.';
+            } else {
+                errorMessage += 'Please try again.';
+            }
+            
+            alert(errorMessage);
             this.resetBattle();
         }
     }
@@ -92,21 +135,216 @@ class AutoJudge {
     async getModelResponses() {
         this.setStepActive('step-responses');
         
-        await this.delay(3000);
+        try {
+            const [response1, response2] = await Promise.all([
+                this.callModel(this.currentBattle.model1, this.currentBattle.prompt),
+                this.callModel(this.currentBattle.model2, this.currentBattle.prompt)
+            ]);
 
-        const sampleResponses = {
-            'gpt-4o': 'GPT-4o provides a comprehensive and well-structured response with detailed explanations and practical examples.',
-            'claude-3.5-sonnet': 'Claude 3.5 Sonnet offers a thoughtful analysis with clear reasoning and creative insights.',
-            'gemini-pro': 'Gemini Pro delivers a balanced response with good factual accuracy and helpful suggestions.',
-            'llama-3.1-70b': 'Llama 3.1 70B generates a detailed response with strong logical flow and practical applications.'
-        };
-
-        this.currentBattle.responses = {
-            model1: sampleResponses[this.currentBattle.model1] || 'Model response generated.',
-            model2: sampleResponses[this.currentBattle.model2] || 'Model response generated.'
-        };
+            this.currentBattle.responses = {
+                model1: response1,
+                model2: response2
+            };
+        } catch (error) {
+            console.error('Error getting model responses:', error);
+            throw error;
+        }
 
         this.setStepCompleted('step-responses');
+    }
+
+    async callModel(modelId, prompt) {
+        const provider = this.getModelProvider(modelId);
+        
+        switch (provider) {
+            case 'openai':
+                return await this.callOpenAI(modelId, prompt);
+            case 'anthropic':
+                return await this.callAnthropic(modelId, prompt);
+            case 'google':
+                return await this.callGoogle(modelId, prompt);
+            case 'xai':
+                return await this.callXAI(modelId, prompt);
+            case 'deepseek':
+                return await this.callDeepSeek(modelId, prompt);
+            default:
+                throw new Error(`Unknown provider for model: ${modelId}`);
+        }
+    }
+
+    getModelProvider(modelId) {
+        if (modelId.startsWith('gpt-') || modelId.startsWith('o3') || modelId.startsWith('o4')) {
+            return 'openai';
+        } else if (modelId.startsWith('claude-')) {
+            return 'anthropic';
+        } else if (modelId.startsWith('gemini-')) {
+            return 'google';
+        } else if (modelId.startsWith('grok-')) {
+            return 'xai';
+        } else if (modelId.startsWith('deepseek-')) {
+            return 'deepseek';
+        }
+        return 'unknown';
+    }
+
+    async callOpenAI(modelId, prompt) {
+        // Use max_completion_tokens for newer models (o3, o4, etc.) and max_tokens for older models
+        const useNewParameter = modelId.startsWith('o3') || modelId.startsWith('o4') || modelId.startsWith('gpt-4');
+        const tokenParam = useNewParameter ? 'max_completion_tokens' : 'max_tokens';
+        
+        const requestBody = {
+            model: modelId,
+            messages: [{
+                role: 'user',
+                content: prompt
+            }],
+            temperature: 0.7
+        };
+        
+        requestBody[tokenParam] = 2000;
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.apiKeys.openai}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            if (errorData.error) {
+                throw new Error(`OpenAI API error: ${errorData.error.message}`);
+            }
+            throw new Error(`OpenAI API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Validate response structure
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('Invalid response format from OpenAI API');
+        }
+
+        // Check if generation was cut off due to token limit
+        if (data.choices[0].finish_reason === 'length') {
+            console.warn('OpenAI response was truncated due to token limit');
+        }
+
+        return data.choices[0].message.content;
+    }
+
+    async callAnthropic(modelId, prompt) {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': this.apiKeys.anthropic,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: modelId,
+                max_tokens: 2000,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }]
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            if (errorData.type === 'error') {
+                throw new Error(`Anthropic API error: ${errorData.error.message}`);
+            }
+            throw new Error(`Anthropic API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.content && data.content[0] && data.content[0].text) {
+            return data.content[0].text;
+        }
+        throw new Error('Invalid response format from Anthropic API');
+    }
+
+    async callGoogle(modelId, prompt) {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${this.apiKeys.google}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }],
+                generationConfig: {
+                    maxOutputTokens: 2000,
+                    temperature: 0.7
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Google API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+    }
+
+    async callXAI(modelId, prompt) {
+        const response = await fetch('https://api.x.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.apiKeys.xai}`
+            },
+            body: JSON.stringify({
+                model: modelId,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }],
+                max_tokens: 2000,
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`xAI API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.choices[0].message.content;
+    }
+
+    async callDeepSeek(modelId, prompt) {
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.apiKeys.deepseek}`
+            },
+            body: JSON.stringify({
+                model: modelId,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }],
+                max_tokens: 2000,
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`DeepSeek API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.choices[0].message.content;
     }
 
     async evaluateResponses() {
@@ -251,21 +489,24 @@ class AutoJudge {
     getModelDisplayName(modelId) {
         const displayNames = {
             'gpt-4o': 'GPT-4o',
-            'claude-3.5-sonnet': 'Claude 3.5 Sonnet',
-            'gemini-pro': 'Gemini Pro',
-            'llama-3.1-70b': 'Llama 3.1 70B'
+            'gpt-4.1-mini': 'GPT-4.1 Mini',
+            'o3-mini': 'o3 Mini',
+            'o3': 'o3',
+            'o4-mini': 'o4 Mini',
+            'claude-opus-4': 'Claude Opus 4',
+            'claude-sonnet-4': 'Claude Sonnet 4',
+            'gemini-2.5-pro': 'Gemini 2.5 Pro',
+            'gemini-2.5-flash': 'Gemini 2.5 Flash',
+            'grok-3': 'Grok 3',
+            'grok-3-mini': 'Grok 3 Mini',
+            'deepseek-r1': 'DeepSeek-R1',
+            'deepseek-r1-0528': 'DeepSeek-R1-0528'
         };
         return displayNames[modelId] || modelId;
     }
 
     getJudgeDisplayName(judgeId) {
-        const displayNames = {
-            'gpt-4o': 'GPT-4o',
-            'claude-4-sonnet': 'Claude 4 Sonnet',
-            'gemini-2.5': 'Gemini 2.5',
-            'o3': 'o3'
-        };
-        return displayNames[judgeId] || judgeId;
+        return this.getModelDisplayName(judgeId);
     }
 
     setStepActive(stepId) {
@@ -329,10 +570,22 @@ class AutoJudge {
         judgeItem.innerHTML = `
             <select class="judge-select">
                 <option value="">Choose a judge...</option>
-                <option value="gpt-4o">GPT-4o</option>
-                <option value="claude-4-sonnet">Claude 4 Sonnet</option>
-                <option value="gemini-2.5">Gemini 2.5</option>
-                <option value="o3">o3</option>
+                <optgroup label="OpenAI">
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="o3">o3</option>
+                    <option value="o3-mini">o3 Mini</option>
+                </optgroup>
+                <optgroup label="Anthropic">
+                    <option value="claude-opus-4">Claude Opus 4</option>
+                    <option value="claude-sonnet-4">Claude Sonnet 4</option>
+                </optgroup>
+                <optgroup label="Google DeepMind">
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                </optgroup>
+                <optgroup label="xAI">
+                    <option value="grok-3">Grok 3</option>
+                </optgroup>
             </select>
             <button type="button" class="remove-judge">×</button>
         `;
@@ -372,30 +625,60 @@ class AutoJudge {
             <div class="judge-item">
                 <select class="judge-select">
                     <option value="">Choose a judge...</option>
-                    <option value="gpt-4o">GPT-4o</option>
-                    <option value="claude-4-sonnet">Claude 4 Sonnet</option>
-                    <option value="gemini-2.5">Gemini 2.5</option>
-                    <option value="o3" selected>o3</option>
+                    <optgroup label="OpenAI">
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        <option value="o1-preview">o1 Preview</option>
+                        <option value="o1-mini">o1 Mini</option>
+                    </optgroup>
+                    <optgroup label="Anthropic">
+                        <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet</option>
+                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                    </optgroup>
+                    <optgroup label="Google">
+                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    </optgroup>
                 </select>
                 <button type="button" class="remove-judge" style="display: none;">×</button>
             </div>
             <div class="judge-item">
                 <select class="judge-select">
                     <option value="">Choose a judge...</option>
-                    <option value="gpt-4o">GPT-4o</option>
-                    <option value="claude-4-sonnet" selected>Claude 4 Sonnet</option>
-                    <option value="gemini-2.5">Gemini 2.5</option>
-                    <option value="o3">o3</option>
+                    <optgroup label="OpenAI">
+                        <option value="gpt-4o" selected>GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        <option value="o1-preview">o1 Preview</option>
+                        <option value="o1-mini">o1 Mini</option>
+                    </optgroup>
+                    <optgroup label="Anthropic">
+                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                    </optgroup>
+                    <optgroup label="Google">
+                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    </optgroup>
                 </select>
                 <button type="button" class="remove-judge" style="display: none;">×</button>
             </div>
             <div class="judge-item">
                 <select class="judge-select">
                     <option value="">Choose a judge...</option>
-                    <option value="gpt-4o">GPT-4o</option>
-                    <option value="claude-4-sonnet">Claude 4 Sonnet</option>
-                    <option value="gemini-2.5" selected>Gemini 2.5</option>
-                    <option value="o3">o3</option>
+                    <optgroup label="OpenAI">
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        <option value="o1-preview">o1 Preview</option>
+                        <option value="o1-mini">o1 Mini</option>
+                    </optgroup>
+                    <optgroup label="Anthropic">
+                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                    </optgroup>
+                    <optgroup label="Google">
+                        <option value="gemini-2.0-flash-exp" selected>Gemini 2.0 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    </optgroup>
                 </select>
                 <button type="button" class="remove-judge" style="display: none;">×</button>
             </div>
