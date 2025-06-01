@@ -673,8 +673,11 @@ Be thorough, fair, and objective in your evaluation. Focus on the specific crite
     }
 
     showResults() {
-        const { model1, model2, rubric, scores, responses } = this.currentBattle;
+        const { prompt, model1, model2, rubric, scores, responses } = this.currentBattle;
         const { averages, individual } = scores;
+
+        // Display the original prompt
+        document.getElementById('prompt-display').textContent = prompt;
 
         document.getElementById('model1-name').textContent = this.getModelDisplayName(model1);
         document.getElementById('model2-name').textContent = this.getModelDisplayName(model2);

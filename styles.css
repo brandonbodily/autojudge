@@ -277,6 +277,29 @@ select:focus {
     100% { transform: rotate(360deg); }
 }
 
+.task-prompt {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.task-prompt h4 {
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.prompt-display {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #3498db;
+    font-style: italic;
+    line-height: 1.6;
+    color: #555;
+    white-space: pre-wrap;
+}
+
 .winner-announcement {
     text-align: center;
     margin-bottom: 30px;
