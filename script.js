@@ -418,19 +418,30 @@ Make the criteria specific and relevant to the task type. For example:
                 this.showModelProgress('judging-details', judge, 'calling', 'Evaluating responses...', true);
             });
 
-            // Process each judge's evaluation
-            for (const judge of judges) {
+            // Process all judge evaluations in parallel
+            const judgePromises = judges.map(async (judge) => {
                 try {
                     const evaluation = await this.getJudgeEvaluationWithProgress(judge);
-                    judgeEvaluations[judge] = evaluation;
+                    return { judge, evaluation, success: true };
                 } catch (error) {
                     console.error(`Error getting evaluation from judge ${judge}:`, error);
                     // Show error state
                     this.showModelProgress('judging-details', judge, 'error', 'Evaluation failed');
-                    // Fallback evaluation if a judge fails
-                    judgeEvaluations[judge] = this.getFallbackEvaluation();
+                    return { 
+                        judge, 
+                        evaluation: this.getFallbackEvaluation(), 
+                        success: false 
+                    };
                 }
-            }
+            });
+
+            // Wait for all judge evaluations to complete
+            const judgeResults = await Promise.all(judgePromises);
+            
+            // Collect results
+            judgeResults.forEach(result => {
+                judgeEvaluations[result.judge] = result.evaluation;
+            });
 
             const avgModel1 = this.calculateAverage(Object.values(judgeEvaluations).map(j => j.overallScores.model1));
             const avgModel2 = this.calculateAverage(Object.values(judgeEvaluations).map(j => j.overallScores.model2));
@@ -470,7 +481,8 @@ ${responses.model2}
 
 Please evaluate both responses according to each criterion on a scale of 1-10 (where 10 is excellent and 1 is poor).
 
-Return your evaluation in this exact JSON format:
+Return your evaluation in this exact JSON format. IMPORTANT: Keep the reasoning as a single paragraph without line breaks:
+
 {
   "model1_scores": {
     "${rubric.criteria[0]}": 8.5,
@@ -484,10 +496,10 @@ Return your evaluation in this exact JSON format:
     "${rubric.criteria[2]}": 7.0,
     "${rubric.criteria[3]}": 8.5
   },
-  "reasoning": "Detailed explanation of your evaluation, comparing both responses across all criteria. Explain why you gave each score and what distinguishes the better response."
+  "reasoning": "Detailed explanation of your evaluation in a single paragraph, comparing both responses across all criteria. Explain why you gave each score and what distinguishes the better response. Do not use line breaks in this field."
 }
 
-Be thorough, fair, and objective in your evaluation. Focus on the specific criteria provided.`;
+Be thorough, fair, and objective in your evaluation. Focus on the specific criteria provided. Keep your reasoning concise and in a single paragraph.`;
 
         const judgeResponse = await this.callModel(judgeModel, judgePrompt);
         
@@ -565,19 +577,33 @@ Be thorough, fair, and objective in your evaluation. Focus on the specific crite
         try {
             return JSON.parse(cleanResponse);
         } catch (error) {
-            console.error('Failed to parse JSON response:', cleanResponse);
-            console.error('Parse error:', error.message);
-            
-            // Log the problematic part of the JSON
-            const errorPosition = error.message.match(/position (\d+)/);
-            if (errorPosition) {
-                const pos = parseInt(errorPosition[1]);
-                const start = Math.max(0, pos - 50);
-                const end = Math.min(cleanResponse.length, pos + 50);
-                console.error('Problem area:', cleanResponse.substring(start, end));
+            // Try to fix common JSON issues
+            try {
+                // Fix unescaped control characters in the reasoning field
+                let fixedResponse = cleanResponse;
+                
+                // Find the reasoning field and fix control characters
+                const reasoningMatch = fixedResponse.match(/"reasoning":\s*"(.*?)"/s);
+                if (reasoningMatch) {
+                    const originalReasoning = reasoningMatch[1];
+                    const fixedReasoning = originalReasoning
+                        .replace(/\n/g, ' ')      // Replace newlines with spaces
+                        .replace(/\r/g, ' ')      // Replace carriage returns with spaces
+                        .replace(/\t/g, ' ')      // Replace tabs with spaces
+                        .replace(/\s+/g, ' ')     // Collapse multiple spaces
+                        .trim();                  // Trim whitespace
+                    
+                    fixedResponse = fixedResponse.replace(
+                        /"reasoning":\s*".*?"/s,
+                        `"reasoning": "${fixedReasoning}"`
+                    );
+                }
+                
+                return JSON.parse(fixedResponse);
+                
+            } catch (secondError) {
+                throw new Error(`JSON parsing failed: ${error.message}`);
             }
-            
-            throw new Error(`JSON parsing failed: ${error.message}`);
         }
     }
 
