@@ -6,9 +6,11 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #f7f7f8;
     min-height: 100vh;
-    color: #333;
+    color: #374151;
+    margin: 0;
+    padding: 0;
 }
 
 .container {
@@ -20,34 +22,40 @@ body {
 header {
     text-align: center;
     margin-bottom: 40px;
+    padding: 40px 0;
 }
 
 header h1 {
     font-size: 3rem;
-    color: white;
+    color: #1f2937;
     margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
 header p {
-    color: rgba(255,255,255,0.9);
+    color: #6b7280;
     font-size: 1.2rem;
+    font-weight: 400;
 }
 
 main {
     background: white;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
 }
 
 .battle-setup h2,
 .battle-progress h2,
 .results h2 {
-    margin-bottom: 25px;
-    color: #2c3e50;
-    border-bottom: 2px solid #ecf0f1;
-    padding-bottom: 10px;
+    margin-bottom: 32px;
+    color: #1f2937;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 16px;
+    font-size: 1.5rem;
+    font-weight: 600;
 }
 
 .input-group {
@@ -57,23 +65,28 @@ main {
 .input-group label {
     display: block;
     margin-bottom: 8px;
-    font-weight: 600;
-    color: #2c3e50;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
 }
 
 textarea {
     width: 100%;
-    padding: 12px;
-    border: 2px solid #ecf0f1;
+    padding: 12px 16px;
+    border: 1px solid #d1d5db;
     border-radius: 8px;
     font-size: 16px;
     resize: vertical;
-    transition: border-color 0.3s ease;
+    transition: all 0.2s ease;
+    background: #fff;
 }
 
 textarea:focus {
     outline: none;
-    border-color: #3498db;
+    border-color: #10b981;
+    ring: 2px;
+    ring-color: rgba(16, 185, 129, 0.1);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 .model-selection {
@@ -92,42 +105,45 @@ textarea:focus {
 .model-group label {
     display: block;
     margin-bottom: 8px;
-    font-weight: 600;
-    color: #2c3e50;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
 }
 
 select {
     width: 100%;
-    padding: 12px;
-    border: 2px solid #ecf0f1;
+    padding: 12px 16px;
+    border: 1px solid #d1d5db;
     border-radius: 8px;
     font-size: 16px;
     background: white;
-    transition: border-color 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 select:focus {
     outline: none;
-    border-color: #3498db;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 .vs {
     font-size: 1.5rem;
-    font-weight: bold;
-    color: #e74c3c;
+    font-weight: 600;
+    color: #6b7280;
     text-align: center;
     min-width: 40px;
 }
 
 .battle-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #10b981;
     color: white;
     border: none;
-    padding: 15px 30px;
-    font-size: 18px;
+    padding: 16px 32px;
+    font-size: 16px;
+    font-weight: 500;
     border-radius: 8px;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.2s ease;
     width: 100%;
     max-width: 300px;
     display: block;
@@ -135,13 +151,15 @@ select:focus {
 }
 
 .battle-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
 }
 
 .battle-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
+    background: #9ca3af;
 }
 
 .progress-steps {
@@ -154,41 +172,45 @@ select:focus {
     display: flex;
     align-items: center;
     gap: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    opacity: 0.5;
-    transition: opacity 0.3s ease;
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 12px;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
 }
 
 .step.active {
     opacity: 1;
-    background: #e3f2fd;
+    background: #ecfdf5;
+    border-color: #10b981;
 }
 
 .step.completed {
     opacity: 1;
-    background: #e8f5e8;
+    background: #f0fdf4;
+    border-color: #22c55e;
 }
 
 .step-number {
-    background: #bdc3c7;
+    background: #9ca3af;
     color: white;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
+    font-weight: 600;
+    font-size: 0.875rem;
 }
 
 .step.active .step-number {
-    background: #3498db;
+    background: #10b981;
 }
 
 .step.completed .step-number {
-    background: #27ae60;
+    background: #22c55e;
 }
 
 .step-text {
@@ -278,35 +300,39 @@ select:focus {
 }
 
 .task-prompt {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
+    background: #f9fafb;
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid #e5e7eb;
 }
 
 .task-prompt h4 {
-    margin-bottom: 15px;
-    color: #2c3e50;
+    margin-bottom: 16px;
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 1rem;
 }
 
 .prompt-display {
     background: white;
-    padding: 15px;
-    border-radius: 6px;
-    border-left: 4px solid #3498db;
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid #10b981;
     font-style: italic;
     line-height: 1.6;
-    color: #555;
+    color: #6b7280;
     white-space: pre-wrap;
 }
 
 .winner-announcement {
     text-align: center;
-    margin-bottom: 30px;
-    padding: 20px;
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    margin-bottom: 32px;
+    padding: 24px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     border-radius: 12px;
     color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .winner-announcement h3 {
@@ -323,33 +349,39 @@ select:focus {
 
 .model-score {
     text-align: center;
-    padding: 20px;
-    background: #f8f9fa;
+    padding: 24px;
+    background: #f9fafb;
     border-radius: 12px;
     min-width: 150px;
+    border: 1px solid #e5e7eb;
 }
 
 .model-score h4 {
-    margin-bottom: 10px;
-    color: #2c3e50;
+    margin-bottom: 12px;
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 0.875rem;
 }
 
 .score {
     font-size: 2rem;
-    font-weight: bold;
-    color: #3498db;
+    font-weight: 700;
+    color: #10b981;
 }
 
 .detailed-results {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
+    background: #f9fafb;
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid #e5e7eb;
 }
 
 .detailed-results h4 {
-    margin-bottom: 15px;
-    color: #2c3e50;
+    margin-bottom: 16px;
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 1rem;
 }
 
 #rubric-display,
@@ -363,15 +395,18 @@ select:focus {
 }
 
 .llm-outputs {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
+    background: #f9fafb;
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid #e5e7eb;
 }
 
 .llm-outputs h4 {
-    margin-bottom: 15px;
-    color: #2c3e50;
+    margin-bottom: 16px;
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 1rem;
 }
 
 .outputs-container {
@@ -388,11 +423,11 @@ select:focus {
 }
 
 .output-section h5 {
-    background: #3498db;
+    background: #1f2937;
     color: white;
-    padding: 12px 15px;
+    padding: 12px 16px;
     margin: 0;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
 }
 
@@ -508,8 +543,9 @@ select:focus {
 .judge-selection label {
     display: block;
     margin-bottom: 8px;
-    font-weight: 600;
-    color: #2c3e50;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
 }
 
 .judges-container {
@@ -527,21 +563,22 @@ select:focus {
 
 .judge-select {
     flex: 1;
-    padding: 10px;
-    border: 2px solid #ecf0f1;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 14px;
     background: white;
-    transition: border-color 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .judge-select:focus {
     outline: none;
-    border-color: #3498db;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 .remove-judge {
-    background: #e74c3c;
+    background: #ef4444;
     color: white;
     border: none;
     width: 30px;
@@ -553,24 +590,27 @@ select:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .remove-judge:hover {
-    background: #c0392b;
+    background: #dc2626;
+    transform: scale(1.05);
 }
 
 .add-judge-btn {
-    background: #27ae60;
+    background: #10b981;
     color: white;
     border: none;
-    padding: 8px 16px;
+    padding: 10px 16px;
     font-size: 14px;
+    font-weight: 500;
     border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .add-judge-btn:hover {
-    background: #229954;
+    background: #059669;
+    transform: translateY(-1px);
 }
